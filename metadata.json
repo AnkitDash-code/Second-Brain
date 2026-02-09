@@ -1,0 +1,8 @@
+{
+  "name": "Second Brain",
+  "description": "A multimodal AI assistant for memory retention, designed with accessibility and ease of use in mind. It helps users store and recall memories using voice, text, and images.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

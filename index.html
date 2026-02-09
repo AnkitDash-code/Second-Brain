@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Second Brain</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Custom Scrollbar for cleaner UI */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+
+      /* Accessibility High Contrast Mode */
+      body.high-contrast {
+        background-color: #000 !important;
+        color: #fff !important;
+      }
+      body.high-contrast .bg-white {
+        background-color: #1a1a1a !important;
+        color: #fff !important;
+        border-color: #fff !important;
+      }
+      body.high-contrast .bg-gray-50, 
+      body.high-contrast .bg-calm-50 {
+        background-color: #000 !important;
+      }
+      body.high-contrast .text-gray-500,
+      body.high-contrast .text-gray-600,
+      body.high-contrast .text-gray-700,
+      body.high-contrast .text-gray-900,
+      body.high-contrast .text-calm-900 {
+        color: #ffff00 !important; /* Yellow text for high contrast */
+      }
+      body.high-contrast .text-primary-600 {
+        color: #00ffff !important; /* Cyan for primary links/buttons */
+      }
+      body.high-contrast .bg-primary-600 {
+        background-color: #00ffff !important;
+        color: #000 !important;
+      }
+      body.high-contrast button {
+        border: 2px solid #fff;
+      }
+      body.high-contrast input, 
+      body.high-contrast textarea {
+        background-color: #000 !important;
+        color: #fff !important;
+        border: 2px solid #fff !important;
+      }
+      /* Increase font size slightly in high contrast mode for accessibility-text class */
+      body.high-contrast .accessibility-text {
+        font-size: 1.25rem !important;
+        line-height: 1.75rem !important;
+        font-weight: 600 !important;
+      }
+    </style>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: {
+                50: '#f0f9ff',
+                100: '#e0f2fe',
+                500: '#0ea5e9',
+                600: '#0284c7',
+                700: '#0369a1',
+              },
+              calm: {
+                50: '#f8fafc',
+                100: '#f1f5f9',
+                800: '#1e293b',
+                900: '#0f172a',
+              }
+            },
+            fontFamily: {
+              sans: ['Inter', 'system-ui', 'sans-serif'],
+            },
+          }
+        }
+      }
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "react": "https://esm.sh/react@^19.2.4",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.40.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
+    "clsx": "https://esm.sh/clsx@^2.1.1",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0",
+    "uuid": "https://esm.sh/uuid@^13.0.0",
+    "idb": "https://esm.sh/idb@^8.0.3"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-calm-50 text-calm-900 antialiased h-full selection:bg-primary-100 selection:text-primary-700">
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
