@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { getAllMemories } from '../services/db';
+import { getAllMemories } from '../services/store';
 import { Memory } from '../types';
 import { Users, Loader2 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 interface EntityNode {
   name: string;
@@ -9,13 +10,19 @@ interface EntityNode {
 }
 
 const Insights: React.FC = () => {
+  const { user } = useAuth();
   const [entities, setEntities] = useState<EntityNode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const processData = async () => {
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
       try {
-        const memories = await getAllMemories();
+        setIsLoading(true);
+        const memories = await getAllMemories(user.uid);
         const counts: Record<string, number> = {};
         
         memories.forEach(m => {
@@ -40,7 +47,7 @@ const Insights: React.FC = () => {
       }
     };
     processData();
-  }, []);
+  }, [user]);
 
   const maxCount = entities.length > 0 ? entities[0].count : 1;
 

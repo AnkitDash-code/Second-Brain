@@ -1,9 +1,11 @@
+
 import React, { useEffect, useState } from 'react';
-import { getAllMemories, deleteMemory, toggleMemoryVerification, toggleActionCompletion } from '../services/db';
+import { getAllMemories, deleteMemory, toggleMemoryVerification, toggleActionCompletion } from '../services/store';
 import { Memory } from '../types';
 import MemoryCard from '../components/MemoryCard';
 import { Search, Loader2, UserCog, User, Filter } from 'lucide-react';
 import clsx from 'clsx';
+import { useAuth } from '../contexts/AuthContext';
 
 const Dashboard: React.FC = () => {
   const [memories, setMemories] = useState<Memory[]>([]);
@@ -11,23 +13,29 @@ const Dashboard: React.FC = () => {
   const [search, setSearch] = useState('');
   const [isCaregiverMode, setIsCaregiverMode] = useState(false);
   const [showTasksOnly, setShowTasksOnly] = useState(false);
+  const { user } = useAuth();
 
   const fetchMemories = async () => {
+    if (!user) return;
     setIsLoading(true);
     try {
-      const data = await getAllMemories();
-      // Sort by newest first
-      setMemories(data.sort((a, b) => b.timestamp - a.timestamp));
-    } catch (e) {
+      const data = await getAllMemories(user.uid);
+      setMemories(data);
+    } catch (e: any) {
       console.error(e);
+      if (e.code === 'failed-precondition') {
+        alert('Firestore index not found. Please create a composite index on the \'memories\' collection for \'userId\' ascending and \'timestamp\' descending.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchMemories();
-  }, []);
+    if (user) {
+      fetchMemories();
+    }
+  }, [user]);
 
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to forget this memory?')) {
@@ -74,7 +82,6 @@ const Dashboard: React.FC = () => {
         </div>
         
         <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-           {/* Caregiver Toggle */}
           <button
             onClick={() => setIsCaregiverMode(!isCaregiverMode)}
             className={clsx(

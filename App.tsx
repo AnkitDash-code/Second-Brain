@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -7,32 +8,38 @@ import Recall from './pages/Recall';
 import Stories from './pages/Stories';
 import Insights from './pages/Insights';
 import Onboarding from './pages/Onboarding';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 const App: React.FC = () => {
-  const [isOnboardingComplete, setIsOnboardingComplete] = useState<boolean>(() => {
-    return localStorage.getItem('onboarding_complete') === 'true';
-  });
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  )
+}
 
-  const handleOnboardingComplete = () => {
-    localStorage.setItem('onboarding_complete', 'true');
-    setIsOnboardingComplete(true);
-  };
+const AppContent: React.FC = () => {
+  const { user, loading } = useAuth();
 
-  if (!isOnboardingComplete) {
-    return <Onboarding onComplete={handleOnboardingComplete} />;
+  if (loading) {
+    return <div>Loading...</div>; // Or a proper splash screen
   }
 
   return (
     <Router>
       <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/insights" element={<Insights />} />
-          <Route path="/stories" element={<Stories />} />
-          <Route path="/capture" element={<Capture />} />
-          <Route path="/recall" element={<Recall />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
+        {!user ? (
+          <Route path="*" element={<Onboarding />} />
+        ) : (
+          <Route element={<Layout />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/insights" element={<Insights />} />
+            <Route path="/stories" element={<Stories />} />
+            <Route path="/capture" element={<Capture />} />
+            <Route path="/recall" element={<Recall />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        )}
       </Routes>
     </Router>
   );

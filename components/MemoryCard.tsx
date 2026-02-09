@@ -38,12 +38,11 @@ const MemoryCard: React.FC<MemoryCardProps> = ({ memory, onDelete, isCaregiverMo
   };
 
   const renderContent = () => {
-    if (memory.type === MemoryType.IMAGE && memory.blob) {
-      const imageUrl = URL.createObjectURL(memory.blob);
+    if (memory.type === MemoryType.IMAGE && memory.mediaContent) {
       return (
         <div className="mt-3">
           <img 
-            src={imageUrl} 
+            src={memory.mediaContent} 
             alt="Memory" 
             className="rounded-lg max-h-60 object-cover w-full border border-gray-200" 
             loading="lazy"
@@ -52,12 +51,11 @@ const MemoryCard: React.FC<MemoryCardProps> = ({ memory, onDelete, isCaregiverMo
         </div>
       );
     }
-    if (memory.type === MemoryType.VIDEO && memory.blob) {
-       const videoUrl = URL.createObjectURL(memory.blob);
+    if (memory.type === MemoryType.VIDEO && memory.mediaContent) {
        return (
         <div className="mt-3">
           <video 
-            src={videoUrl} 
+            src={memory.mediaContent} 
             controls
             className="rounded-lg max-h-60 w-full border border-gray-200 bg-black" 
           />
@@ -69,9 +67,9 @@ const MemoryCard: React.FC<MemoryCardProps> = ({ memory, onDelete, isCaregiverMo
        return (
          <div className="mt-3">
             <p className="text-gray-800 mb-2 accessibility-text">"{memory.content}"</p>
-            {memory.blob && (
+            {memory.mediaContent && (
               <audio controls className="w-full h-10">
-                <source src={URL.createObjectURL(memory.blob)} type={memory.blob.type} />
+                <source src={memory.mediaContent} />
                 Your browser does not support the audio element.
               </audio>
             )}

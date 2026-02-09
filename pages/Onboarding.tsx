@@ -1,81 +1,79 @@
+
 import React, { useState } from 'react';
-import { ArrowRight, Brain, Camera, Mic, MessageSquare } from 'lucide-react';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../services/firebase';
+import { ArrowRight, Brain } from 'lucide-react';
 
-interface OnboardingProps {
-  onComplete: () => void;
-}
+const Onboarding: React.FC = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSignUp, setIsSignUp] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
-  const [step, setStep] = useState(0);
-
-  const steps = [
-    {
-      icon: Brain,
-      title: "Welcome to Second Brain",
-      description: "Your personal AI assistant designed to help you remember everything effortlessly.",
-      color: "text-primary-600"
-    },
-    {
-      icon: Mic,
-      title: "Capture Any Sense",
-      description: "Speak your thoughts, snap a photo, or write a note. We'll organize it for you.",
-      color: "text-purple-500"
-    },
-    {
-      icon: MessageSquare,
-      title: "Recall Instantly",
-      description: "Just ask questions naturally. Your Second Brain connects the dots to find the answer.",
-      color: "text-emerald-500"
-    }
-  ];
-
-  const handleNext = () => {
-    if (step < steps.length - 1) {
-      setStep(step + 1);
-    } else {
-      onComplete();
+  const handleAuth = async () => {
+    setError(null);
+    try {
+      if (isSignUp) {
+        await createUserWithEmailAndPassword(auth, email, password);
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+      }
+    } catch (error: any) {
+      setError(error.message);
     }
   };
 
-  const CurrentIcon = steps[step].icon;
-
   return (
-    <div className="fixed inset-0 bg-white z-[60] flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-500">
+    <div className="fixed inset-0 bg-white z-[60] flex flex-col items-center justify-center p-6 text-center">
       <div className="max-w-md w-full flex flex-col items-center">
-        
-        {/* Progress Dots */}
-        <div className="flex space-x-2 mb-12">
-          {steps.map((_, i) => (
-            <div 
-              key={i} 
-              className={`h-2 rounded-full transition-all duration-300 ${
-                i === step ? 'w-8 bg-primary-600' : 'w-2 bg-gray-200'
-              }`} 
-            />
-          ))}
-        </div>
-
-        {/* Content */}
         <div className="bg-primary-50 p-8 rounded-full mb-8 shadow-sm">
-          <CurrentIcon className={`w-16 h-16 ${steps[step].color}`} />
+          <Brain className="w-16 h-16 text-primary-600" />
         </div>
         
         <h2 className="text-3xl font-bold text-gray-900 mb-4 tracking-tight">
-          {steps[step].title}
+          {isSignUp ? 'Create Your Second Brain' : 'Welcome Back'}
         </h2>
         
-        <p className="text-gray-500 text-lg leading-relaxed mb-12">
-          {steps[step].description}
+        <p className="text-gray-500 text-lg leading-relaxed mb-8">
+          Your personal AI assistant to remember everything.
         </p>
 
-        {/* Action */}
+        {error && <p className="text-red-500 mb-4">{error}</p>}
+
+        <div className="w-full space-y-4 mb-8">
+          <input 
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email Address"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          />
+          <input 
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          />
+        </div>
+
         <button 
-          onClick={handleNext}
+          onClick={handleAuth}
           className="w-full bg-gray-900 text-white font-semibold py-4 rounded-xl shadow-lg hover:bg-black transition-all flex items-center justify-center group"
         >
-          {step === steps.length - 1 ? "Get Started" : "Continue"}
+          {isSignUp ? 'Create Account' : 'Sign In'}
           <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
         </button>
+
+        <p className="mt-6 text-gray-500">
+          {isSignUp ? 'Already have an account?' : 'Don\'t have an account?'}
+          <button 
+            onClick={() => setIsSignUp(!isSignUp)}
+            className="ml-2 font-semibold text-primary-600 hover:underline"
+          >
+            {isSignUp ? 'Sign In' : 'Sign Up'}
+          </button>
+        </p>
       </div>
     </div>
   );

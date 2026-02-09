@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { getAllMemories } from '../services/db';
+import { getAllMemories } from '../services/store';
 import { generateStory, generateStoryVideo, generateStorySpeech } from '../services/gemini';
 import { Memory } from '../types';
 import { BookOpen, Sparkles, Loader2, Calendar, Video, Play, Volume2, UserCircle } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const Stories: React.FC = () => {
+  const { user } = useAuth();
   const [memories, setMemories] = useState<Memory[]>([]);
   const [story, setStory] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -16,8 +18,10 @@ const Stories: React.FC = () => {
   const [isMediaGenerating, setIsMediaGenerating] = useState(false);
 
   useEffect(() => {
-    getAllMemories().then(setMemories);
-  }, []);
+    if (user) {
+      getAllMemories(user.uid).then(setMemories);
+    }
+  }, [user]);
 
   const handleGenerate = async (range: string) => {
     setIsGenerating(true);

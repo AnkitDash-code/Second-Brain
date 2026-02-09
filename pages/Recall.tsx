@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Bot, User, Loader2, Sparkles, Mic } from 'lucide-react';
-import { getAllMemories } from '../services/db';
+import { getAllMemories } from '../services/store';
 import { chatWithMemories } from '../services/gemini';
 import { Memory, ChatMessage } from '../types';
 import LiveVoice from '../components/LiveVoice';
+import { useAuth } from '../contexts/AuthContext';
 
 const Recall: React.FC = () => {
+  const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([
     { id: '1', role: 'model', text: 'Hello. I am your Second Brain. Ask me about your past memories, or I can help you recall specific events.', timestamp: Date.now() }
   ]);
@@ -16,9 +18,10 @@ const Recall: React.FC = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Load memories on mount
-    getAllMemories().then(setMemories);
-  }, []);
+    if (user) {
+      getAllMemories(user.uid).then(setMemories);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (scrollRef.current) {

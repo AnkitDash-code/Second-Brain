@@ -16,9 +16,10 @@ export interface ActionItem {
 
 export interface Memory {
   id: string;
+  userId: string;
   type: MemoryType;
   content: string; // The text content or transcription
-  blob?: Blob; // The raw file for images/audio
+  mediaContent?: string; // Base64 encoded media
   summary?: string; // AI generated summary
   timestamp: number;
   tags: string[];

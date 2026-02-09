@@ -1,45 +1,49 @@
+
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mic, Image as ImageIcon, FileText, Send, StopCircle, Loader2, Camera, Video, ArrowLeft } from 'lucide-react';
+import { Mic, Image as ImageIcon, FileText, Send, StopCircle, Loader2, Camera, Video } from 'lucide-react';
 import clsx from 'clsx';
 import { Memory, MemoryType, ProcessingStatus, Sentiment, ActionItem } from '../types';
-import { addMemory } from '../services/db';
+import { addMemory } from '../services/store';
 import { analyzeImage, processAudio, analyzeText, analyzeVideo } from '../services/gemini';
+import { useAuth } from '../contexts/AuthContext';
 
 const Capture: React.FC = () => {
   const navigate = useNavigate();
-  // Default to AUDIO for Voice-First experience
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<MemoryType>(MemoryType.AUDIO);
   const [textInput, setTextInput] = useState('');
   const [status, setStatus] = useState<ProcessingStatus>('idle');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   
-  // Audio Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const audioChunksRef = useRef<Blob[]>([]);
 
-  // Image/Video Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const handleSave = async (
     content: string, 
-    blob?: Blob, 
+    mediaContent: string | undefined, 
     tags: string[] = [], 
     sentiment: Sentiment = 'neutral',
     entities: string[] = [],
     action?: ActionItem
   ) => {
+    if (!user) return;
     setStatus('saving');
+    const memoryId = `${user.uid}_${crypto.randomUUID()}`;
+
     const newMemory: Memory = {
-      id: crypto.randomUUID(),
+      id: memoryId,
+      userId: user.uid,
       type: activeTab,
-      content,
-      blob,
+      content: content,
+      mediaContent: mediaContent,
       timestamp: Date.now(),
       tags,
-      verified: false, // Default unverified
+      verified: false,
       sentiment,
       entities,
       action: action?.type !== 'none' ? action : undefined
@@ -64,15 +68,25 @@ const Capture: React.FC = () => {
     }
   };
 
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
   const processMedia = async () => {
     if (!selectedFile) return;
     setStatus('processing');
+    const mediaContent = await fileToBase64(selectedFile);
     if (activeTab === MemoryType.IMAGE) {
       const result = await analyzeImage(selectedFile);
-      await handleSave(result.content, selectedFile, result.tags, result.sentiment, result.entities, result.action);
+      await handleSave(result.content, mediaContent, result.tags, result.sentiment, result.entities, result.action);
     } else if (activeTab === MemoryType.VIDEO) {
       const result = await analyzeVideo(selectedFile);
-      await handleSave(result.content, selectedFile, result.tags, result.sentiment, result.entities, result.action);
+      await handleSave(result.content, mediaContent, result.tags, result.sentiment, result.entities, result.action);
     }
   };
 
@@ -100,10 +114,11 @@ const Capture: React.FC = () => {
       mediaRecorderRef.current.stop();
       mediaRecorderRef.current.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const mediaContent = await fileToBase64(new File([audioBlob], "audio.webm"));
         setIsRecording(false);
         setStatus('processing');
         const result = await processAudio(audioBlob);
-        await handleSave(result.content, audioBlob, result.tags, result.sentiment, result.entities, result.action);
+        await handleSave(result.content, mediaContent, result.tags, result.sentiment, result.entities, result.action);
       };
     }
   };
@@ -114,7 +129,6 @@ const Capture: React.FC = () => {
         <h1 className="text-2xl font-bold text-calm-900">Capture Memory</h1>
       </div>
 
-      {/* Tabs */}
       <div className="flex bg-gray-100 p-1 rounded-xl mb-6 shadow-inner">
         {[
           { id: MemoryType.AUDIO, icon: Mic, label: 'Voice' },
@@ -142,10 +156,7 @@ const Capture: React.FC = () => {
         ))}
       </div>
 
-      {/* Content Area */}
       <div className="flex-1 bg-white md:rounded-2xl md:shadow-sm md:border md:border-gray-200 md:p-8 flex flex-col justify-center relative overflow-hidden">
-        
-        {/* TEXT MODE */}
         {activeTab === MemoryType.TEXT && (
           <div className="flex flex-col h-full">
             <textarea
@@ -169,7 +180,6 @@ const Capture: React.FC = () => {
           </div>
         )}
 
-        {/* AUDIO MODE */}
         {activeTab === MemoryType.AUDIO && (
           <div className="flex flex-col items-center justify-center h-full space-y-8">
             <div className={clsx(
@@ -203,7 +213,6 @@ const Capture: React.FC = () => {
           </div>
         )}
 
-        {/* IMAGE / VIDEO MODE */}
         {(activeTab === MemoryType.IMAGE || activeTab === MemoryType.VIDEO) && (
           <div className="flex flex-col h-full">
             <div 

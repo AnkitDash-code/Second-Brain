@@ -11,6 +11,7 @@ import {
   orderBy,
   getDoc,
   setDoc,
+  where,
 } from 'firebase/firestore';
 import { Memory } from '../types';
 import { app } from './firebase';
@@ -22,8 +23,8 @@ export const addMemory = async (memory: Memory) => {
   await setDoc(doc(db, 'memories', memory.id), memory);
 };
 
-export const getAllMemories = async (): Promise<Memory[]> => {
-  const q = query(memoriesCollection, orderBy('timestamp', 'desc'));
+export const getAllMemories = async (userId: string): Promise<Memory[]> => {
+  const q = query(memoriesCollection, where('userId', '==', userId), orderBy('timestamp', 'desc'));
   const querySnapshot = await getDocs(q);
   const memories: Memory[] = [];
   querySnapshot.forEach((doc) => {
