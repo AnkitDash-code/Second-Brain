@@ -92,7 +92,7 @@ export const analyzeText = async (text: string): Promise<AnalysisResult> => {
 
     const responseText = response.text || "{}";
     const data = JSON.parse(responseText);
-    
+
     return {
       content: data.content || text,
       tags: data.tags || [],
@@ -108,13 +108,13 @@ export const analyzeText = async (text: string): Promise<AnalysisResult> => {
     };
   } catch (error) {
     console.error("Gemini Text Error:", error);
-    return { 
-      content: text, 
-      tags: ["note"], 
-      sentiment: 'neutral', 
-      entities: [], 
+    return {
+      content: text,
+      tags: ["note"],
+      sentiment: 'neutral',
+      entities: [],
       confidenceScore: 0.5,
-      action: { type: 'none', description: '', completed: false } 
+      action: { type: 'none', description: '', completed: false }
     };
   }
 };
@@ -125,14 +125,14 @@ export const analyzeText = async (text: string): Promise<AnalysisResult> => {
 export const analyzeVideo = async (videoBlob: Blob): Promise<AnalysisResult> => {
   try {
     const base64Data = await blobToBase64(videoBlob);
-    
+
     const response = await ai.models.generateContent({
       model: MODEL_NAME,
       contents: {
         parts: [
           {
             inlineData: {
-              mimeType: videoBlob.type, 
+              mimeType: videoBlob.type,
               data: base64Data
             }
           },
@@ -159,7 +159,7 @@ export const analyzeVideo = async (videoBlob: Blob): Promise<AnalysisResult> => 
 
     const text = response.text || "{}";
     const data = JSON.parse(text);
-    
+
     return {
       content: data.content || "Video analyzed.",
       tags: data.tags || [],
@@ -175,13 +175,13 @@ export const analyzeVideo = async (videoBlob: Blob): Promise<AnalysisResult> => 
     };
   } catch (error) {
     console.error("Gemini Video Error:", error);
-    return { 
-      content: "Could not analyze video.", 
-      tags: ["video"], 
-      sentiment: 'neutral', 
-      entities: [], 
+    return {
+      content: "Could not analyze video.",
+      tags: ["video"],
+      sentiment: 'neutral',
+      entities: [],
       confidenceScore: 0,
-      action: { type: 'none', description: '', completed: false } 
+      action: { type: 'none', description: '', completed: false }
     };
   }
 };
@@ -192,7 +192,7 @@ export const analyzeVideo = async (videoBlob: Blob): Promise<AnalysisResult> => 
 export const analyzeImage = async (imageBlob: Blob): Promise<AnalysisResult> => {
   try {
     const base64Data = await blobToBase64(imageBlob);
-    
+
     const response = await ai.models.generateContent({
       model: MODEL_NAME,
       contents: {
@@ -226,7 +226,7 @@ export const analyzeImage = async (imageBlob: Blob): Promise<AnalysisResult> => 
 
     const text = response.text || "{}";
     const data = JSON.parse(text);
-    
+
     return {
       content: data.content || "Image analyzed.",
       tags: data.tags || [],
@@ -242,13 +242,13 @@ export const analyzeImage = async (imageBlob: Blob): Promise<AnalysisResult> => 
     };
   } catch (error) {
     console.error("Gemini Vision Error:", error);
-    return { 
-      content: "Could not analyze image.", 
-      tags: ["image"], 
-      sentiment: 'neutral', 
-      entities: [], 
+    return {
+      content: "Could not analyze image.",
+      tags: ["image"],
+      sentiment: 'neutral',
+      entities: [],
       confidenceScore: 0,
-      action: { type: 'none', description: '', completed: false } 
+      action: { type: 'none', description: '', completed: false }
     };
   }
 };
@@ -266,7 +266,7 @@ export const processAudio = async (audioBlob: Blob): Promise<AnalysisResult> => 
         parts: [
           {
             inlineData: {
-              mimeType: audioBlob.type.split(';')[0] || 'audio/webm', 
+              mimeType: audioBlob.type.split(';')[0] || 'audio/webm',
               data: base64Data
             }
           },
@@ -283,11 +283,11 @@ export const processAudio = async (audioBlob: Blob): Promise<AnalysisResult> => 
         ]
       },
       config: {
-         responseMimeType: "application/json",
-         responseSchema: {
-            type: Type.OBJECT,
-            properties: commonSchemaProperties
-         }
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: commonSchemaProperties
+        }
       }
     });
 
@@ -309,13 +309,13 @@ export const processAudio = async (audioBlob: Blob): Promise<AnalysisResult> => 
     };
   } catch (error) {
     console.error("Gemini Audio Error:", error);
-    return { 
-      content: "Could not process audio.", 
-      tags: ["audio", "error"], 
-      sentiment: 'neutral', 
-      entities: [], 
+    return {
+      content: "Could not process audio.",
+      tags: ["audio", "error"],
+      sentiment: 'neutral',
+      entities: [],
       confidenceScore: 0,
-      action: { type: 'none', description: '', completed: false } 
+      action: { type: 'none', description: '', completed: false }
     };
   }
 };
@@ -359,8 +359,8 @@ export const chatWithMemories = async (query: string, memories: Memory[]): Promi
 
 export const generateStory = async (memories: Memory[], timeRange: string): Promise<string> => {
   // Same logic as before
-   try {
-    const sortedMemories = [...memories].sort((a, b) => a.timestamp - b.timestamp).slice(0, 50); 
+  try {
+    const sortedMemories = [...memories].sort((a, b) => a.timestamp - b.timestamp).slice(0, 50);
     if (sortedMemories.length === 0) return "No memories found to tell a story about.";
 
     const contextString = sortedMemories.map(m => {
@@ -406,7 +406,7 @@ export const generateStorySpeech = async (text: string): Promise<string | null> 
         },
       },
     });
-    
+
     const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
     if (base64Audio) {
       return `data:audio/wav;base64,${base64Audio}`;
@@ -422,9 +422,9 @@ export const generateStorySpeech = async (text: string): Promise<string | null> 
 export const generateStoryVideo = async (summary: string): Promise<string | null> => {
   try {
     if (!await hasSelectedApiKey()) {
-       await openSelectKey();
-       // Check again or fail
-       if (!await hasSelectedApiKey()) return null;
+      await openSelectKey();
+      // Check again or fail
+      if (!await hasSelectedApiKey()) return null;
     }
 
     // Refresh AI client with new key just in case (though we use process.env usually, Veo flow is special in Studio)
@@ -449,14 +449,14 @@ export const generateStoryVideo = async (summary: string): Promise<string | null
     // Poll for completion
     while (!operation.done) {
       await new Promise(resolve => setTimeout(resolve, 5000)); // Check every 5s
-      operation = await freshAi.operations.getVideosOperation({operation: operation});
+      operation = await freshAi.operations.getVideosOperation({ operation: operation });
     }
 
     const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
     if (downloadLink) {
-        // We must append key to fetch
-        const videoUrl = `${downloadLink}&key=${process.env.API_KEY}`;
-        return videoUrl;
+      // We must append key to fetch
+      const videoUrl = `${downloadLink}&key=${process.env.API_KEY}`;
+      return videoUrl;
     }
     return null;
 

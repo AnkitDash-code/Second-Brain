@@ -8,6 +8,7 @@ import Recall from './pages/Recall';
 import Stories from './pages/Stories';
 import Insights from './pages/Insights';
 import Onboarding from './pages/Onboarding';
+import LandingPage from './pages/LandingPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 const App: React.FC = () => {
@@ -29,7 +30,11 @@ const AppContent: React.FC = () => {
     <Router>
       <Routes>
         {!user ? (
-          <Route path="*" element={<Onboarding />} />
+          <>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </>
         ) : (
           <Route element={<Layout />}>
             <Route path="/" element={<Dashboard />} />

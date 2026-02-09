@@ -1,6 +1,8 @@
 
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useMutation } from 'convex/react';
+import { api } from '../convex/_generated/api';
 import { Mic, Image as ImageIcon, FileText, Send, StopCircle, Loader2, Camera, Video } from 'lucide-react';
 import clsx from 'clsx';
 import { Memory, MemoryType, ProcessingStatus, Sentiment, ActionItem } from '../types';
@@ -23,6 +25,40 @@ const Capture: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
+  // Convex mutation for file upload
+  const generateUploadUrl = useMutation(api.files.generateUploadUrl);
+  const saveFileRecord = useMutation(api.files.saveFile);
+
+  /**
+   * Upload a file (Blob/File) to Convex storage and return the serving URL.
+   */
+  const uploadToConvex = async (file: Blob, memoryId: string, userId: string): Promise<string | undefined> => {
+    try {
+      // Step 1: Get a short-lived upload URL from Convex
+      const uploadUrl = await generateUploadUrl();
+
+      // Step 2: POST the file to the upload URL
+      const result = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+        body: file,
+      });
+      const { storageId } = await result.json();
+
+      // Step 3: Save the file record in Convex DB (for tracking/cleanup)
+      await saveFileRecord({ storageId, memoryId, userId });
+
+      // Step 4: Construct the HTTP serving URL
+      // Convex site URL follows the pattern: replace .cloud with .site in VITE_CONVEX_URL
+      const convexUrl = (import.meta as any).env?.VITE_CONVEX_URL || '';
+      const siteUrl = convexUrl.replace('.cloud', '.site');
+      return `${siteUrl}/getFile?storageId=${encodeURIComponent(storageId)}`;
+    } catch (error) {
+      console.error("Convex upload error:", error);
+      return undefined;
+    }
+  };
+
   const handleSave = async (
     content: string, 
     mediaContent: string | undefined, 
@@ -40,13 +76,13 @@ const Capture: React.FC = () => {
       userId: user.uid,
       type: activeTab,
       content: content,
-      mediaContent: mediaContent,
       timestamp: Date.now(),
       tags,
       verified: false,
       sentiment,
       entities,
-      action: action?.type !== 'none' ? action : undefined
+      ...(mediaContent ? { mediaContent } : {}),
+      ...(action?.type !== 'none' ? { action } : {})
     };
     await addMemory(newMemory);
     setStatus('success');
@@ -68,26 +104,41 @@ const Capture: React.FC = () => {
     }
   };
 
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-    });
-  };
-
   const processMedia = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile || !user) return;
     setStatus('processing');
-    const mediaContent = await fileToBase64(selectedFile);
+    
+    // Analyze with Gemini first (still needs the raw file)
+    let result;
     if (activeTab === MemoryType.IMAGE) {
-      const result = await analyzeImage(selectedFile);
-      await handleSave(result.content, mediaContent, result.tags, result.sentiment, result.entities, result.action);
+      result = await analyzeImage(selectedFile);
     } else if (activeTab === MemoryType.VIDEO) {
-      const result = await analyzeVideo(selectedFile);
-      await handleSave(result.content, mediaContent, result.tags, result.sentiment, result.entities, result.action);
+      result = await analyzeVideo(selectedFile);
     }
+    if (!result) return;
+
+    // Upload file to Convex storage
+    const memoryId = `${user.uid}_${crypto.randomUUID()}`;
+    const mediaUrl = await uploadToConvex(selectedFile, memoryId, user.uid);
+
+    // Save with the Convex storage reference instead of base64
+    setStatus('saving');
+    const newMemory: Memory = {
+      id: memoryId,
+      userId: user.uid,
+      type: activeTab,
+      content: result.content,
+      mediaContent: mediaUrl,
+      timestamp: Date.now(),
+      tags: result.tags,
+      verified: false,
+      sentiment: result.sentiment,
+      entities: result.entities,
+      action: result.action?.type !== 'none' ? result.action : undefined,
+    };
+    await addMemory(newMemory);
+    setStatus('success');
+    setTimeout(() => navigate('/'), 1000);
   };
 
   const startRecording = async () => {
@@ -114,11 +165,35 @@ const Capture: React.FC = () => {
       mediaRecorderRef.current.stop();
       mediaRecorderRef.current.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        const mediaContent = await fileToBase64(new File([audioBlob], "audio.webm"));
         setIsRecording(false);
         setStatus('processing');
+
+        // Analyze audio with Gemini
         const result = await processAudio(audioBlob);
-        await handleSave(result.content, mediaContent, result.tags, result.sentiment, result.entities, result.action);
+
+        // Upload audio to Convex
+        if (!user) return;
+        const memoryId = `${user.uid}_${crypto.randomUUID()}`;
+        const mediaUrl = await uploadToConvex(audioBlob, memoryId, user.uid);
+
+        // Save with the Convex URL instead of base64
+        setStatus('saving');
+        const newMemory: Memory = {
+          id: memoryId,
+          userId: user.uid,
+          type: activeTab,
+          content: result.content,
+          mediaContent: mediaUrl,
+          timestamp: Date.now(),
+          tags: result.tags,
+          verified: false,
+          sentiment: result.sentiment,
+          entities: result.entities,
+          action: result.action?.type !== 'none' ? result.action : undefined,
+        };
+        await addMemory(newMemory);
+        setStatus('success');
+        setTimeout(() => navigate('/'), 1000);
       };
     }
   };
